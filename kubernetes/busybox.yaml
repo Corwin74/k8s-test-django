@@ -1,0 +1,52 @@
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+
+  name: busybox-test
+
+  labels:
+
+    app: busybox
+
+spec:
+
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: busybox
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: busybox
+
+    spec:
+
+      containers:
+
+        - name: test
+
+          image: busybox
+
+          envFrom:
+            - configMapRef:
+                name: django-configmap-v1
+
+          command: [ "/bin/sh", "-c", "while true ; do date; sleep 600; done;" ]
+
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: "1"
+            requests:
+              memory: 128Mi
+              cpu: "0.1"
