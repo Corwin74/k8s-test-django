@@ -34,16 +34,132 @@ $ docker-compose run web ./manage.py createsuperuser
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
 
 
+
+## Развертывание в Minikube
+
+[Инструкци](https://minikube.sigs.k8s.io/docs/start/) по установке Minikube на локальную машину  
+Для развертывания PostgreSQL понадобится менеджер пакетов Kubernetes - Helm. [Инструкция](https://helm.sh/docs/intro/install/) по установке  
+Для управления кластером Minikube устанавливаем утилиту [kubectl](https://kubernetes.io/ru/docs/tasks/tools/install-kubectl/)
+
+Запускаем кластер Kubernetes в Minikube:  
+```sh
+minikube start --driver=virtualbox
+```
+Дожидаемся окончания выполнения команды и проверяем, что кластер успешно развернут:
+```sh
+kubectl get all --all-namespaces
+```
+В результате должны получить подобный вывод:
+```
+NAMESPACE     NAME                                   READY   STATUS    RESTARTS      AGE
+kube-system   pod/coredns-565d847f94-zts7r           1/1     Running   0             22m
+kube-system   pod/etcd-minikube                      1/1     Running   0             22m
+kube-system   pod/kube-apiserver-minikube            1/1     Running   0             22m
+kube-system   pod/kube-controller-manager-minikube   1/1     Running   0             22m
+kube-system   pod/kube-proxy-4vjvd                   1/1     Running   0             22m
+kube-system   pod/kube-scheduler-minikube            1/1     Running   0             22m
+kube-system   pod/storage-provisioner                1/1     Running   1 (21m ago)   22m
+
+NAMESPACE     NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)                  AGE
+default       service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP                  22m
+kube-system   service/kube-dns     ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP,9153/TCP   22m
+
+NAMESPACE     NAME                        DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+kube-system   daemonset.apps/kube-proxy   1         1         1       1            1           kubernetes.io/os=linux   22m
+
+NAMESPACE     NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+kube-system   deployment.apps/coredns   1/1     1            1           22m
+
+NAMESPACE     NAME                                 DESIRED   CURRENT   READY   AGE
+kube-system   replicaset.apps/coredns-565d847f94   1         1         1       22m
+```
+Убеждаемся, что все наши сервисы в состоянии `READY`, статус `Running` и нет сообщений об ошибках.
+
+Далее создаем секретный файл env.yaml в каталоге `kubernetes` для передачи логинов, паролей и другой конфигурации в наши приложения:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: django-configmap-v1
+data:
+  DATABASE_URL: postgres://starburger_db_user:my-funny-password@postgres-sjsjjs-hhshs:5432/star_burger
+  SECRET_KEY: mega-secret-key-change-it
+  ALLOWED_HOSTS: '*'
+  DEBUG: 'FALSE'
+```
+
+Создаем ConfigMap в кластере командой:
+```sh
+kubectl apply -f kubernetes/env.yaml
+```
+Проверяем, что сущность создалась:
+```sh
+kubectl describe cm django-configmap-v1
+```
+Команда должна вывести на экран пары ключи:значения из нашего файла.  
+
 Построение образа приложения:
 
-minikube image build -t dj:fresh .
+```sh
+minikube image build -t dj:fresh backend_main_django/
+```
+Дожидаемся завершения и провеяем, что образ локально доступен minikube:
+```
+minikube image ls
+```
+Среди списка образов должен быть `dj:fresh`  
+Теперь можно развернуть приложение с помощью deployment, использующего этот образ:
+```sh
+kubectl apply -f kubernetes/django.yaml
+```
+Проверяем, что успешно появились pod, deployment и replicaset:
+```
+kubectl get all -l app.kubernetes.io/name=django
+```
+```
+NAME                               READY   STATUS    RESTARTS        AGE
+pod/django-unit-5d9bf96bcb-kgwg5   1/1     Running   2 (5m57s ago)   24h
 
+NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/django-unit   1/1     1            1           24h
+
+NAME                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/django-unit-5d9bf96bcb   1         1         1       24h
+```
+А также сервис с типом `Cluster-IP`
+```sh
+kubectl get svc django-cluster-ip
+```
+```
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+django-cluster-ip   ClusterIP   10.108.98.188   <none>        8080/TCP   24h
+```
+Теперь обеспечим доступ к нашему приложению снаружи кластера через Ingress  
+Активируем встроенный add-on в minikube:
+```sh
+minikube addons enable ingress
+```
+Развертываем nginx-ingress:
+```sh
+kubectl apply -f kubernetes/ingress.yaml
+```
+Узнаем внешний адрес нашего кластера minikube:
+```
+minikube ip
+```
+Добавляем полученный ip-адрес и имя `star-burger.test` в файл `hosts` нашего компьютера, например:
+```
+192.168.49.2    star-burger.test
+```
+Теперь мы можем набрать адрес `http://star-burger.test` в браузере и должна открыться страница входа в админку Django.  
+Осталось развернуть базу данных PosgreSQL. 
 
 postgres=#\c star_burger
 star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
 
 
 
-minikube addons enable ingress
+
 
 
