@@ -152,7 +152,7 @@ minikube ip
 192.168.49.2    star-burger.test
 ```
 Теперь мы можем набрать адрес `http://star-burger.test` в браузере и должна открыться страница входа в админку Django.  
-Осталось развернуть базу данных PosgreSQL.  
+Осталось развернуть базу данных PostgreSQL.  
 ```
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install db bitnami/postgresql
