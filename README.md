@@ -177,9 +177,50 @@ echo $POSTGRES_PASSWORD
 ```
 psql -U postrgres
 ```
-
-postgres=#\c star_burger
+Создаем базу данных проекта:
+```
+postgres=# CREATE DATABASE star_burger;
+```
+Создаем пользователя, через которого будем подключаться к БД:
+```
+postgres=# CREATE USER starburger_db_user WITH PASSWORD 'password';
+```
+Делаем необходимые настройки:
+```
+postgres=# ALTER ROLE starburger_db_user SET client_encoding TO 'utf8';
+postgres=# ALTER ROLE starburger_db_user SET default_transaction_isolation TO 'read committed';
+postgres=# ALTER ROLE starburger_db_user SET timezone TO 'UTC';
+```
+Даем права нашему пользователю на созданную базу:
+```
+postgres=# GRANT ALL PRIVILEGES ON DATABASE star_burger TO starburger_db_user;
+```
+Подключаемся к созданной базе:
+```
+postgres=#\c star_burger;
+```
+и обновляем права:
+```
 star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
+```
+Теперь подключаемся к pod c Django:
+```sh
+kubectl exec pod/django-unit-5d9bf96bcb-kgwg5 -it -- bash
+
+```
+Делаем миграции и создаем админа:
+```sh
+python manage.py migrate
+python manage.py createsuperuser
+```
+Базовая настройка нашего приложения закончена. В дальшейшем для выполнения команды `migrate` можно использовать заранее созданный job:
+```sh
+kubectl -f apply kubernetes/django-migrate
+```
+А для регулярного удаления сессий, создать расписание:
+```sh
+kubectl -f apply kubernetes/clear-sessions.yaml
+```
 
 
 

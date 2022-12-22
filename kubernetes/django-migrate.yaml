@@ -18,5 +18,5 @@ spec:
         - "--noinput"
         envFrom:
           - configMapRef:
-              name: django-configmap-v4
+              name: django-configmap-v1
       restartPolicy: Never
