@@ -37,9 +37,8 @@ $ docker-compose run web ./manage.py createsuperuser
 
 ## Развертывание в Minikube
 
-[Инструкци](https://minikube.sigs.k8s.io/docs/start/) по установке Minikube на локальную машину  
-Для развертывания PostgreSQL понадобится менеджер пакетов Kubernetes - Helm. [Инструкция](https://helm.sh/docs/intro/install/) по установке  
-Для управления кластером Minikube устанавливаем утилиту [kubectl](https://kubernetes.io/ru/docs/tasks/tools/install-kubectl/)
+[Инструкции](https://minikube.sigs.k8s.io/docs/start/) по установке Minikube на локальную машину.  
+Для развертывания PostgreSQL понадобится менеджер пакетов Kubernetes - [Helm](https://helm.sh/docs/intro/install/), для управления кластером Minikube утилита - [kubectl](https://kubernetes.io/ru/docs/tasks/tools/install-kubectl/)
 
 Запускаем кластер Kubernetes в Minikube:  
 ```sh
@@ -153,7 +152,31 @@ minikube ip
 192.168.49.2    star-burger.test
 ```
 Теперь мы можем набрать адрес `http://star-burger.test` в браузере и должна открыться страница входа в админку Django.  
-Осталось развернуть базу данных PosgreSQL. 
+Осталось развернуть базу данных PosgreSQL.  
+```
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install db bitnami/postresql
+```
+Находим имя пода с инcтансом PostgreSQL:  
+```
+kubectl get po -l app.kubernetes.io/instance=db
+```
+```
+NAME              READY   STATUS    RESTARTS      AGE
+   1/1     Running   1 (18h ago)   18h
+```
+И затем подключаемся к нему:
+```sh
+kubectl exec db-postgresql-0 -it -- bash
+```
+Выводим пароль от базы данных:
+```
+echo $POSTGRES_PASSWORD
+```
+Подключаемся к базе данных через psql, вводим пароль из предыдущего шага:
+```
+psql -U postrgres
+```
 
 postgres=#\c star_burger
 star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
