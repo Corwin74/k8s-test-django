@@ -22,7 +22,7 @@ spec:
         - containerPort: 80
         envFrom:
           - configMapRef:
-              name: django-configmap-v4
+              name: django-configmap-v1
 ---
 apiVersion: v1
 kind: Service

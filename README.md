@@ -155,7 +155,7 @@ minikube ip
 Осталось развернуть базу данных PosgreSQL.  
 ```
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install db bitnami/postresql
+helm install db bitnami/postgresql
 ```
 Находим имя пода с инcтансом PostgreSQL:  
 ```
@@ -175,7 +175,7 @@ echo $POSTGRES_PASSWORD
 ```
 Подключаемся к базе данных через psql, вводим пароль из предыдущего шага:
 ```
-psql -U postrgres
+psql -U postgres
 ```
 Создаем базу данных проекта:
 ```
@@ -183,7 +183,7 @@ postgres=# CREATE DATABASE star_burger;
 ```
 Создаем пользователя, через которого будем подключаться к БД:
 ```
-postgres=# CREATE USER starburger_db_user WITH PASSWORD 'password';
+postgres=# CREATE USER starburger_db_user WITH PASSWORD 'my-funny-password';
 ```
 Делаем необходимые настройки:
 ```
@@ -219,9 +219,8 @@ kubectl -f apply kubernetes/django-migrate
 ```
 А для регулярного удаления сессий, создать расписание:
 ```sh
-kubectl -f apply kubernetes/clear-sessions.yaml
+kubectl -f apply kubernetes/cron-job.yaml
 ```
-
 
 
 
