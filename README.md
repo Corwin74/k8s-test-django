@@ -162,8 +162,8 @@ helm install db bitnami/postgresql
 kubectl get po -l app.kubernetes.io/instance=db
 ```
 ```
-NAME              READY   STATUS    RESTARTS      AGE
-   1/1     Running   1 (18h ago)   18h
+NAME              READY   STATUS    RESTARTS   AGE
+db-postgresql-0   1/1     Running   0          63m
 ```
 И затем подключаемся к нему:
 ```sh
