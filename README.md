@@ -169,13 +169,9 @@ NAME              READY   STATUS    RESTARTS      AGE
 ```sh
 kubectl exec db-postgresql-0 -it -- bash
 ```
-Выводим пароль от базы данных:
+Подключаемся к Postgres внутри pod:
 ```
-echo $POSTGRES_PASSWORD
-```
-Подключаемся к базе данных через psql, вводим пароль из предыдущего шага:
-```
-psql -U postgres
+psql postgres://postgres:${POSTGRES_PASSWORD}@
 ```
 Создаем базу данных проекта:
 ```
