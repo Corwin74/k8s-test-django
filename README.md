@@ -74,20 +74,75 @@ kube-system   replicaset.apps/coredns-565d847f94   1         1         1       2
 ```
 Убеждаемся, что все наши сервисы в состоянии `READY`, статус `Running` и нет сообщений об ошибках.
 
-Далее создаем секретный файл env.yaml в каталоге `kubernetes` для передачи логинов, паролей и другой конфигурации в наши приложения:
+### Устанавливаем базу данных PostgreSQL.  
+```
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install db bitnami/postgresql
+```
+В выводе второй команды находим следущие строки:
+```
+`PostgreSQL can be accessed via port 5432 on the following DNS names from within your cluster:
 
+    db-postgresql.default.svc.cluster.local - Read/Write connection
+```
+  `db-postgresql` - это имя созданного сервиса, к нему можно обращаться по имени внутри кластера. Теперь мы можем создать особую сущность Kubernetes - `secret`. В ней будут хранится секретные даннны, такие как логины, пароли и т.п.  
+  ```bash
+  kubectl create secret generic django-secret-v1 --from-literal='SECRET_KEY=67wi5rqyv(aynrrwcxlq25@_(83*6)9s##(rz4hi=+0b&1%-e&' --from-literal='DATABASE_URL=postgres://starburger_db_user:password@db-postgresql:5432/star_burger'
+ ```
+Учетные данные, указанные в `DATABASE_URL` мы будем использовать при создании БД через `psql`  
+Находим имя пода с инcтансом PostgreSQL:  
+```
+kubectl get po -l app.kubernetes.io/instance=db
+```
+```
+NAME              READY   STATUS    RESTARTS   AGE
+db-postgresql-0   1/1     Running   0          63m
+```
+И затем подключаемся к нему:
+```sh
+kubectl exec db-postgresql-0 -it -- bash
+```
+Подключаемся к Postgres внутри pod:
+```
+psql postgres://postgres:${POSTGRES_PASSWORD}@
+```
+Создаем базу данных проекта:
+```
+postgres=# CREATE DATABASE star_burger;
+```
+Создаем пользователя, через которого будем подключаться к БД, используя учетные данные указанные в `secret`:
+```
+postgres=# CREATE USER starburger_db_user WITH PASSWORD 'password';
+```
+Делаем необходимые настройки:
+```
+postgres=# ALTER ROLE starburger_db_user SET client_encoding TO 'utf8';
+postgres=# ALTER ROLE starburger_db_user SET default_transaction_isolation TO 'read committed';
+postgres=# ALTER ROLE starburger_db_user SET timezone TO 'UTC';
+```
+Даем права нашему пользователю на созданную базу:
+```
+postgres=# GRANT ALL PRIVILEGES ON DATABASE star_burger TO starburger_db_user;
+```
+Подключаемся к созданной базе:
+```
+postgres=#\c star_burger;
+```
+и обновляем права:
+```
+star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
+```
+### Развертываем Django
+Cоздаем файл env.yaml в каталоге `kubernetes` для передачи переменных окружения в наши приложения:
 ```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: django-configmap-v1
 data:
-  DATABASE_URL: postgres://starburger_db_user:password@db-postgresql:5432/star_burger
-  SECRET_KEY: mega-secret-key-change-it
   ALLOWED_HOSTS: '*'
   DEBUG: 'FALSE'
 ```
-
 Создаем ConfigMap в кластере командой:
 ```sh
 kubectl apply -f kubernetes/env.yaml
@@ -152,57 +207,6 @@ minikube ip
 192.168.49.2    star-burger.test
 ```
 Теперь мы можем набрать адрес `http://star-burger.test` в браузере и должна открыться страница входа в админку Django.  
-Осталось развернуть базу данных PostgreSQL.  
-```
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install db bitnami/postgresql
-```
-PostgreSQL can be accessed via port 5432 on the following DNS names from within your cluster:
-
-    db-postgresql.default.svc.cluster.local - Read/Write connection
-
-Находим имя пода с инcтансом PostgreSQL:  
-```
-kubectl get po -l app.kubernetes.io/instance=db
-```
-```
-NAME              READY   STATUS    RESTARTS   AGE
-db-postgresql-0   1/1     Running   0          63m
-```
-И затем подключаемся к нему:
-```sh
-kubectl exec db-postgresql-0 -it -- bash
-```
-Подключаемся к Postgres внутри pod:
-```
-psql postgres://postgres:${POSTGRES_PASSWORD}@
-```
-Создаем базу данных проекта:
-```
-postgres=# CREATE DATABASE star_burger;
-```
-Создаем пользователя, через которого будем подключаться к БД:
-```
-postgres=# CREATE USER starburger_db_user WITH PASSWORD 'my-funny-password';
-```
-Делаем необходимые настройки:
-```
-postgres=# ALTER ROLE starburger_db_user SET client_encoding TO 'utf8';
-postgres=# ALTER ROLE starburger_db_user SET default_transaction_isolation TO 'read committed';
-postgres=# ALTER ROLE starburger_db_user SET timezone TO 'UTC';
-```
-Даем права нашему пользователю на созданную базу:
-```
-postgres=# GRANT ALL PRIVILEGES ON DATABASE star_burger TO starburger_db_user;
-```
-Подключаемся к созданной базе:
-```
-postgres=#\c star_burger;
-```
-и обновляем права:
-```
-star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
-```
 Теперь подключаемся к pod c Django:
 ```sh
 kubectl exec pod/django-unit-5d9bf96bcb-kgwg5 -it -- bash
@@ -221,8 +225,3 @@ kubectl -f apply kubernetes/django-migrate
 ```sh
 kubectl -f apply kubernetes/cron-job.yaml
 ```
-
-
-
-
-
