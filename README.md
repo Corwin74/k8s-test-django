@@ -82,7 +82,7 @@ kind: ConfigMap
 metadata:
   name: django-configmap-v1
 data:
-  DATABASE_URL: postgres://starburger_db_user:my-funny-password@postgres-sjsjjs-hhshs:5432/star_burger
+  DATABASE_URL: postgres://starburger_db_user:password@db-postgresql:5432/star_burger
   SECRET_KEY: mega-secret-key-change-it
   ALLOWED_HOSTS: '*'
   DEBUG: 'FALSE'
@@ -157,6 +157,10 @@ minikube ip
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install db bitnami/postgresql
 ```
+PostgreSQL can be accessed via port 5432 on the following DNS names from within your cluster:
+
+    db-postgresql.default.svc.cluster.local - Read/Write connection
+
 Находим имя пода с инcтансом PostgreSQL:  
 ```
 kubectl get po -l app.kubernetes.io/instance=db
