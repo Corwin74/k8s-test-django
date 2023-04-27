@@ -2,6 +2,13 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: django-ingress
+  labels:
+    app.kubernetes.io/name: django-ingress
+    app.kubernetes.io/instance: django-ingress
+    app.kubernetes.io/version: '1'
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: django-application-k8s-example
+    app.kubernetes.io/managed-by: kubectl
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -14,6 +21,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: django-cluster-ip
+                name: django-unit-cluster-ip
                 port:
                   number: 8080

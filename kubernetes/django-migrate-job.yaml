@@ -1,10 +1,18 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
+  labels:
+    app.kubernetes.io/name: django-migrate
+    app.kubernetes.io/instance: django-migrate
+    app.kubernetes.io/version: 3.2.2
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: django-application-k8s-example
+    app.kubernetes.io/managed-by: kubectl
   name: django-migrate
 spec:
-  backoffLimit: 2
+  backoffLimit: 1
   activeDeadlineSeconds: 60
+  ttlSecondsAfterFinished: 60
   template:
     spec:
       containers:

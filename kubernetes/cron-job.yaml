@@ -1,11 +1,20 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
+  labels:
+    app.kubernetes.io/name:  django-clearsessions-cron-job
+    app.kubernetes.io/instance: django-clearsessions-cron-job
+    app.kubernetes.io/version: 3.2.2
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: django-application-k8s-example
+    app.kubernetes.io/managed-by: kubectl
   name: django-clearsessions-cron-jobs
 spec:
-  schedule: "0 0 1 * *"
+  startingDeadlineSeconds: 10
+  schedule: "* * * * *"
   jobTemplate:
     spec:
+      
       template:
         spec:
           containers:
