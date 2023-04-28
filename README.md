@@ -156,7 +156,7 @@ minikube image ls
 Среди списка образов должен быть `dj:fresh`  
 Теперь можно развернуть приложение с помощью deployment, использующего этот образ:
 ```sh
-kubectl apply -f kubernetes/django.yaml
+kubectl apply -f kubernetes/django-deploy.yaml
 ```
 Проверяем, что успешно появились pod, deployment и replicaset:
 ```
