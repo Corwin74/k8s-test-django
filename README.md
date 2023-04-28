@@ -180,9 +180,8 @@ replicaset.apps/django-unit-5796964776   1         1         1       3m3s
 
 NAME                             READY   AGE
 statefulset.apps/db-postgresql   1/1     55m
-
-Теперь обеспечим доступ к нашему приложению снаружи кластера через Ingress  
-Активируем встроенный add-on в minikube:
+```
+Теперь обеспечим доступ к нашему приложению снаружи кластера через Ingress. Активируем встроенный add-on в minikube:
 ```sh
 minikube addons enable ingress
 ```
