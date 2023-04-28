@@ -77,7 +77,7 @@ kube-system   replicaset.apps/coredns-565d847f94   1         1         1       2
 ### Устанавливаем базу данных PostgreSQL.  
 ```
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install db bitnami/postgresql
+helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' bitnami/postgresql
 ```
 В выводе второй команды находим следущие строки:
 ```
@@ -133,16 +133,7 @@ postgres=#\c star_burger;
 star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
 ```
 ### Развертываем Django
-Cоздаем файл env.yaml в каталоге `kubernetes` для передачи переменных окружения в наши приложения:
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: django-configmap-v1
-data:
-  ALLOWED_HOSTS: '*'
-  DEBUG: 'FALSE'
-```
+
 Создаем ConfigMap в кластере командой:
 ```sh
 kubectl apply -f kubernetes/env.yaml
@@ -165,30 +156,31 @@ minikube image ls
 Среди списка образов должен быть `dj:fresh`  
 Теперь можно развернуть приложение с помощью deployment, использующего этот образ:
 ```sh
-kubectl apply -f kubernetes/django.yaml
+kubectl apply -f kubernetes/django-deploy.yaml
 ```
-Проверяем, что успешно появились pod, deployment и replicaset:
+Проверяем, что успешно появились pod, deployment, replicaset, service:
 ```
-kubectl get all -l app.kubernetes.io/name=django
+kubectl get all -l app.kubernetes.io/part-of=django-application-k8s-example
 ```
 ```
-NAME                               READY   STATUS    RESTARTS        AGE
-pod/django-unit-5d9bf96bcb-kgwg5   1/1     Running   2 (5m57s ago)   24h
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/db-postgresql-0                1/1     Running   0          55m
+pod/django-unit-5796964776-q6jk9   1/1     Running   0          3m3s
+
+NAME                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/db-postgresql            ClusterIP   10.110.201.75    <none>        5432/TCP   55m
+service/db-postgresql-hl         ClusterIP   None             <none>        5432/TCP   55m
+service/django-unit-cluster-ip   ClusterIP   10.100.115.113   <none>        8080/TCP   3m3s
 
 NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/django-unit   1/1     1            1           24h
+deployment.apps/django-unit   1/1     1            1           3m3s
 
 NAME                                     DESIRED   CURRENT   READY   AGE
-replicaset.apps/django-unit-5d9bf96bcb   1         1         1       24h
-```
-А также сервис с типом `Cluster-IP`
-```sh
-kubectl get svc django-cluster-ip
-```
-```
-NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-django-cluster-ip   ClusterIP   10.108.98.188   <none>        8080/TCP   24h
-```
+replicaset.apps/django-unit-5796964776   1         1         1       3m3s
+
+NAME                             READY   AGE
+statefulset.apps/db-postgresql   1/1     55m
+
 Теперь обеспечим доступ к нашему приложению снаружи кластера через Ingress  
 Активируем встроенный add-on в minikube:
 ```sh
@@ -223,5 +215,5 @@ kubectl -f apply kubernetes/django-migrate
 ```
 А для регулярного удаления сессий, создать расписание:
 ```sh
-kubectl -f apply kubernetes/cron-job.yaml
+kubectl apply -f kubernetes/cron-job.yaml
 ```
