@@ -215,5 +215,5 @@ kubectl -f apply kubernetes/django-migrate
 ```
 А для регулярного удаления сессий, создать расписание:
 ```sh
-kubectl -f apply kubernetes/cron-job.yaml
+kubectl apply -f kubernetes/cron-job.yaml
 ```
