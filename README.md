@@ -133,16 +133,7 @@ postgres=#\c star_burger;
 star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
 ```
 ### Развертываем Django
-Cоздаем файл env.yaml в каталоге `kubernetes` для передачи переменных окружения в наши приложения:
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: django-configmap-v1
-data:
-  ALLOWED_HOSTS: '*'
-  DEBUG: 'FALSE'
-```
+
 Создаем ConfigMap в кластере командой:
 ```sh
 kubectl apply -f kubernetes/env.yaml
