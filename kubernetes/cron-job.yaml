@@ -11,6 +11,7 @@ metadata:
   name: django-clearsessions-cron-jobs
 spec:
   startingDeadlineSeconds: 10
+  ttlSecondsAfterFinished: 3600
   schedule: "0 0 * * *"
   jobTemplate:
     spec:
