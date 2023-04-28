@@ -77,7 +77,7 @@ kube-system   replicaset.apps/coredns-565d847f94   1         1         1       2
 ### Устанавливаем базу данных PostgreSQL.  
 ```
 helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install db bitnami/postgresql
+helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' bitnami/postgresql
 ```
 В выводе второй команды находим следущие строки:
 ```
