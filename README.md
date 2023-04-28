@@ -158,28 +158,29 @@ minikube image ls
 ```sh
 kubectl apply -f kubernetes/django-deploy.yaml
 ```
-Проверяем, что успешно появились pod, deployment и replicaset:
+Проверяем, что успешно появились pod, deployment, replicaset, service:
 ```
-kubectl get all -l app.kubernetes.io/name=django
+kubectl get all -l app.kubernetes.io/part-of=django-application-k8s-example
 ```
 ```
-NAME                               READY   STATUS    RESTARTS        AGE
-pod/django-unit-5d9bf96bcb-kgwg5   1/1     Running   2 (5m57s ago)   24h
+NAME                               READY   STATUS    RESTARTS   AGE
+pod/db-postgresql-0                1/1     Running   0          55m
+pod/django-unit-5796964776-q6jk9   1/1     Running   0          3m3s
+
+NAME                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/db-postgresql            ClusterIP   10.110.201.75    <none>        5432/TCP   55m
+service/db-postgresql-hl         ClusterIP   None             <none>        5432/TCP   55m
+service/django-unit-cluster-ip   ClusterIP   10.100.115.113   <none>        8080/TCP   3m3s
 
 NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/django-unit   1/1     1            1           24h
+deployment.apps/django-unit   1/1     1            1           3m3s
 
 NAME                                     DESIRED   CURRENT   READY   AGE
-replicaset.apps/django-unit-5d9bf96bcb   1         1         1       24h
-```
-А также сервис с типом `Cluster-IP`
-```sh
-kubectl get svc django-cluster-ip
-```
-```
-NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-django-cluster-ip   ClusterIP   10.108.98.188   <none>        8080/TCP   24h
-```
+replicaset.apps/django-unit-5796964776   1         1         1       3m3s
+
+NAME                             READY   AGE
+statefulset.apps/db-postgresql   1/1     55m
+
 Теперь обеспечим доступ к нашему приложению снаружи кластера через Ingress  
 Активируем встроенный add-on в minikube:
 ```sh
