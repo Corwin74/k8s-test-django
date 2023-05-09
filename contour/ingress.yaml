@@ -10,11 +10,20 @@ metadata:
     app.kubernetes.io/part-of: django-application-k8s-example
     app.kubernetes.io/managed-by: kubectl
   annotations:
+    kubernetes.io/ingress.class: contour
+    kubernetes.io/tls-acme: 'true'
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    ingress.kubernetes.io/force-ssl-redirect: 'true'
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - k8s.shockland.ru
+      secretName: django-unit
   rules:
-    - host: star-burger.test
+    - host: k8s.shockland.ru
       http:
         paths:
           - path: /

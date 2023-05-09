@@ -1,0 +1,24 @@
+#@ load("@ytt:overlay", "overlay")
+
+#@overlay/match by=overlay.subset({"kind": "Deployment", "metadata":{"name":"ingress-nginx-controller"}}),expects=1
+---
+#@overlay/replace
+kind: DaemonSet
+spec:
+  #@overlay/match missing_ok=True
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    spec:
+      containers:
+      #@overlay/match by=overlay.subset({"name":"controller"}),expects=1
+      - ports:
+        #@overlay/match by=overlay.subset({"containerPort":80}),expects=1
+        - containerPort: 80
+          #@overlay/match missing_ok=True
+          hostPort: 80
+        #@overlay/match by=overlay.subset({"containerPort":443}),expects=1
+        - containerPort: 443
+          #@overlay/match missing_ok=True
+          hostPort: 443

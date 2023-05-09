@@ -10,21 +10,35 @@ metadata:
     app.kubernetes.io/managed-by: kubectl
   name: django-clearsessions-cron-jobs
 spec:
-  startingDeadlineSeconds: 10
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid 
   schedule: "* * * * *"
   jobTemplate:
     spec:
-      
+      ttlSecondsAfterFinished: 100
       template:
         spec:
           containers:
           - name: clear-sessions
-            image: dj:fresh
+            image: corwinz/dj:82bdd63
+            ports:
+            - containerPort: 80
+            envFrom:
+              - secretRef:
+                  name: django-secret-v1
+              - configMapRef:
+                  name: django-configmap-v1
+            resources:
+              limits:
+                memory: 256Mi
+                cpu: "0.5"
+              requests:
+                memory: 128Mi
+                cpu: "0.1"
+            command:
+            - "pthon"
             args: 
-            - "python"
             - "manage.py"
             - "clearsessions"
-            envFrom:
-            - configMapRef:
-                name: django-configmap-v1
           restartPolicy: Never

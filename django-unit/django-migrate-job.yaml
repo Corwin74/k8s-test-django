@@ -17,14 +17,25 @@ spec:
     spec:
       containers:
       - name: django-migrate
-        image: dj:fresh
+        image: corwinz/dj:82bdd63
+        ports:
+        - containerPort: 80
+        envFrom:
+          - secretRef:
+              name: django-secret-v1
+          - configMapRef:
+              name: django-configmap-v1
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: "0.5"
+          requests:
+            memory: 128Mi
+            cpu: "0.1"
         command:
         - "python"
         args: 
         - "manage.py"
         - "migrate"
         - "--noinput"
-        envFrom:
-          - configMapRef:
-              name: django-configmap-v1
       restartPolicy: Never

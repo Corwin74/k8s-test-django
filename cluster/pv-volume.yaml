@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: db-volume
+  labels:
+    app.kubernetes.io/name: db_volume
+    app.kubernetes.io/instance: worker
+    app.kubernetes.io/version: v1
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: django-application-k8s-example
+    app.kubernetes.io/managed-by: kubectl
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/pv_data"

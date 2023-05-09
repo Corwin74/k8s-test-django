@@ -1,0 +1,6 @@
+# The postgres helm chart deployment will be using PVC postgresql-data-claim
+primary:
+  persistence:
+    enabled: true
+    existingClaim: "postgresql-pv-claim"
+
