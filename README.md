@@ -85,7 +85,8 @@ helm install db --set commonLabels='app.kubernetes.io/part-of: django-applicatio
 
     db-postgresql.default.svc.cluster.local - Read/Write connection
 ```
-  `db-postgresql` - это имя созданного сервиса, к нему можно обращаться по имени внутри кластера. Теперь мы можем создать особую сущность Kubernetes - `secret`. В ней будут хранится секретные даннны, такие как логины, пароли и т.п.  
+`db-postgresql` - это имя созданного сервиса, к нему можно обращаться по имени внутри кластера.  
+Теперь мы можем создать особую сущность Kubernetes - `secret`. В ней будут хранится секретные даннные, такие как логины, пароли и т.п.  
   ```bash
   kubectl create secret generic django-secret-v1 --from-literal='SECRET_KEY=67wi5rqyv(aynrrwcxlq25@_(83*6)9s##(rz4hi=+0b&1%-e&' --from-literal='DATABASE_URL=postgres://starburger_db_user:password@db-postgresql:5432/star_burger'
  ```
@@ -156,7 +157,7 @@ minikube image ls
 Среди списка образов должен быть `dj:fresh`  
 Теперь можно развернуть приложение с помощью deployment, использующего этот образ:
 ```sh
-kubectl apply -f kubernetes/django-deploy.yaml
+kubectl apply -f minikube/django-deploy.yaml
 ```
 Проверяем, что успешно появились pod, deployment, replicaset, service:
 ```
@@ -218,6 +219,17 @@ kubectl apply -f kubernetes/cron-job.yaml
 ```
 ## Деплой в кластере kubernetes
 
+Для работы приложения необходим `secret django-secret-v1`, содержащий url подключения в котором приложению передаются учетные данные для подключения к базе данных, и SECRET_KEY для Django.
+```
+kubectl create secret generic django-secret-v1 --from-literal='SECRET_KEY=67wi5rqyv(aynrrwcxlq25@_(83*6)9s##(rz4hi=+0b&1%-e&' --from-literal='DATABASE_URL=postgres://starburger_db_user:password@db-postgresql:5432/star_burger'
+```
+
+Переменные окружения `ALLOWED_HOSTS` считываются из `config map ` `django-configmap-v1`
+Образец для создания манифеста в файле `kubernetes/env.yaml`
+
+Образ приложения хранится в Docker Registry: `corwinz/dj`
+
+Образец манифеста для развертывания в кластере: `cluster\django-deploy.yaml`  
 
 ```sh
 kubectl set image deployments django-unit django=corwinz/dj:a075d38
