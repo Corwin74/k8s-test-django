@@ -137,7 +137,7 @@ star_burger=#GRANT ALL ON SCHEMA public TO starburger_db_user;
 
 Создаем ConfigMap в кластере командой:
 ```sh
-kubectl apply -f kubernetes/env.yaml
+kubectl apply -f minikube/env.yaml
 ```
 Проверяем, что сущность создалась:
 ```sh
@@ -188,7 +188,7 @@ minikube addons enable ingress
 ```
 Развертываем nginx-ingress:
 ```sh
-kubectl apply -f kubernetes/ingress.yaml
+kubectl apply -f minikube/ingress.yaml
 ```
 Узнаем внешний адрес нашего кластера minikube:
 ```
@@ -211,11 +211,11 @@ python manage.py createsuperuser
 ```
 Базовая настройка нашего приложения закончена. В дальшейшем для выполнения команды `migrate` можно использовать заранее созданный job:
 ```sh
-kubectl -f apply kubernetes/django-migrate
+kubectl -f apply django-unit/django-migrate
 ```
 А для регулярного удаления сессий, создать расписание:
 ```sh
-kubectl apply -f kubernetes/cron-job.yaml
+kubectl apply -f django-unit/cron-job.yaml
 ```
 ## Деплой в кластере kubernetes
 
@@ -231,6 +231,28 @@ kubectl create secret generic django-secret-v1 --from-literal='SECRET_KEY=67wi5r
 
 Образец манифеста для развертывания в кластере: `cluster\django-deploy.yaml`  
 
+#### Сборка образа
+
+Переходим в каталог `backend_main_django` и выполняем команду `make build`
+```sh
+cd backend_main_django
+make build
+```
+После успешной сборки отправляем образ в Docker Registry
+```sh
+make push
+```
+В кластере мы можем изменить образ используемый нашим приложением на более свежий или откатиться на предыдущий командой, указав нужный тег образа:
+
+```sh
+kubectl set image deployments django-unit django=corwinz/dj:480a8be
+```
+Этот образ содержит изменение, в котором приложение по адресу: https://k8s.shockland.ru/secret отвечает `Badams!!!`, а если заменить образ на предыдущий:  
 ```sh
 kubectl set image deployments django-unit django=corwinz/dj:a075d38
+```
+То по этому же адресу получим ошибку `404. Not found`  
+Для просмотра логов приложения используем команду `kubectl logs`, заменив имя пода на актуальное:
+```sh
+kubectl logs django-unit-6fcfb9db55-tcgks
 ```
