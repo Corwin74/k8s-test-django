@@ -1,111 +1,137 @@
-hostnamectl set-hostname master.local
+# Настройка кластера kubernetes на облачных VPS  
+Арендуем два VPS сервера. с возможностью объединения их в частную сеть на стороне облака. Конфигурация: минимум 2 vCPU, 1Gb памяти.
 
-Редактируем /etc/hosts
+Даем серверам имена:
+```sh
+hostnamectl set-hostname master.local
+hostnamectl set-hostname worker.local
+```
+Редактируем /etc/hosts на обоих серверах.
 
 10.0.0.11 master.local
 10.0.0.12 worker.local
 
-# Настройка автозагрузки и запуск модуля ядра br_netfilter и overlay
+### Настройка автозагрузки и запуск модуля ядра br_netfilter и overlay
+```sh
 cat <<EOF | tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
-
+```
+```console
 modprobe overlay
 modprobe br_netfilter
-
-# Разрешение маршрутизации IP-трафика
+```
+### Разрешение маршрутизации IP-трафика
+```sh
 echo -e "net.bridge.bridge-nf-call-ip6tables = 1\nnet.bridge.bridge-nf-call-iptables = 1\nnet.ipv4.ip_forward = 1" > /etc/sysctl.d/10-k8s.conf
 sysctl -f /etc/sysctl.d/10-k8s.conf
-
-# Отключение файла подкачки
+```
+### Отключение файла подкачки
+```sh
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
-
+```
+Проверяем настройки:  
+```sh
 lsmod | grep br_netfilter
 lsmod | grep overlay
-
-## Ожидаемый результат должен быть следующим (цифры могут отличаться):
-# br_netfilter           32768  0
-# bridge                258048  1 br_netfilter
-# overlay               147456  0
-
+```
+Ожидаемый результат должен быть следующим (цифры могут отличаться):
+```console
+br_netfilter           32768  0
+bridge                258048  1 br_netfilter
+overlay               147456  0
+```
+```sh
 sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
-
-## Ожидаемый результат:
-# net.bridge.bridge-nf-call-iptables = 1
-# net.bridge.bridge-nf-call-ip6tables = 1
-# net.ipv4.ip_forward = 1
-
+```
+Ожидаемый результат:
+```console
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+```
+```sh
 swapon -s
+```
+Ожидаемый вывод команды – пустой. Она ничего не должна отобразить.
 
-## Ожидаемый вывод команды – пустой. Она ничего не должна отобразить.
-
-
-# Настройка deb-репозитория Kubernetes
+### Настройка deb-репозитория Kubernetes
+```sh
 curl -fsSLo /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-
 echo "deb [signed-by=/etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
-
-# Обновление перечня доступных пакетов
+```
+#### Обновление перечня доступных пакетов
+```sh
 apt update
-
-# Установка пакетов kubeadm и kubectl
+```
+#### Установка пакетов kubeadm и kubectl
+```sh
 apt install -y kubeadm kubectl
+```
+### Установка контейнерного движка
 
-
-Установка контейнерного движка
-
-# Установка containerd
+#### Установка containerd
+```sh
 wget https://github.com/containerd/containerd/releases/download/v1.7.0/containerd-1.7.0-linux-amd64.tar.gz
 tar Cxzvf /usr/local containerd-1.7.0-linux-amd64.tar.gz
 rm containerd-1.7.0-linux-amd64.tar.gz
-
-# Создание конфигурации по умолчанию для containerd
+```
+#### Создание конфигурации по умолчанию для containerd
+```sh
 mkdir /etc/containerd/
 containerd config default > /etc/containerd/config.toml
-
-# Настройка cgroup драйвера
+```
+#### Настройка cgroup драйвера
+```sh
 sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
-
-# Установка systemd сервиса для containerd
+```
+#### Установка systemd сервиса для containerd
+```sh
 wget https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
 mv containerd.service /etc/systemd/system/
-
-# Установка компонента runc
+```
+#### Установка компонента runc
+```sh
 wget https://github.com/opencontainers/runc/releases/download/v1.1.4/runc.amd64
 install -m 755 runc.amd64 /usr/local/sbin/runc
 rm runc.amd64
-
-# Установка сетевых плагинов:
+```
+#### Установка сетевых плагинов:
+```sh
 wget https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz
 mkdir -p /opt/cni/bin
 tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.2.0.tgz
 rm cni-plugins-linux-amd64-v1.2.0.tgz
-
-# Запуск сервиса containerd
+```
+#### Запуск сервиса containerd
+```sh
 systemctl daemon-reload
 systemctl enable --now containerd
-
-
+```
+Проверяем:  
+```sh
 crictl --runtime-endpoint unix:///var/run/containerd/containerd.sock version
-
-## Ожидаемый результат:
-# Version:  0.1.0
-# RuntimeName:  containerd
-# RuntimeVersion:  v1.7.0
-# RuntimeApiVersion:  v1
-
-
+```
+Ожидаемый результат:
+```console
+Version:  0.1.0
+RuntimeName:  containerd
+RuntimeVersion:  v1.7.0
+RuntimeApiVersion:  v1
+```
+```sh
 ctr images pull docker.io/library/hello-world:latest
 ctr run docker.io/library/hello-world:latest hello-world
-
-## Ожидаемый результат:
-# …
-# Hello from Docker!
-# This message shows that your installation appears to be working correctly.
-# …
-
+```
+Ожидаемый результат:
+```console
+ …
+ Hello from Docker!
+ This message shows that your installation appears to be working correctly.
+ …
+```
 kubeadm config images pull
 
 kubeadm init --upload-certs --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "10.0.0.11"                           
