@@ -183,4 +183,4 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' --set volumePermissions.enabled=true -f values-db.yaml bitnami/postgresql
 ```
-Дальнейшая настройка аналогична настройке в `minikube`
+Дальнейшая настройка БД аналогична настройке в `minikube`
