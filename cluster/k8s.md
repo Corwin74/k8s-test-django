@@ -132,95 +132,51 @@ ctr run docker.io/library/hello-world:latest hello-world
  This message shows that your installation appears to be working correctly.
  …
 ```
+### Установка кластера kubernetes
+```sh
 kubeadm config images pull
-
 kubeadm init --upload-certs --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "10.0.0.11"                           
-               
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-               
-               
-               kubeadm init --pod-network-cidr=10.244.0.0/16 --upload-certs
-               
-               kubeadm join 10.0.0.12:6443 --token iv26hh.tjsy0iz0b2n22oy9 \
+```          
+Вторая команда должна вывести подобную строку для подключения второй ноды в кластер:
+```sh               
+kubeadm join 10.0.0.12:6443 --token iv26hh.tjsy0iz0b2n22oy9 \
 	--discovery-token-ca-cert-hash sha256:94ec6121d719eed9961b772de7d08318259261ae7b4c0d1dbf717611c128f6bf 
-	
-kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-
-scp root@31.31.203.94:/etc/kubernetes/admin.conf .
-
+```
+На управляющей ноде делаем настройки для корректной работы `kubectl`
+```sh
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" > /etc/environment
 export KUBECONFIG=/etc/kubernetes/admin.conf
+```
+Поскольку у нас только две ноды, разрешаем выполнять полезную нагрузку на управляющей ноде:
+```sh
+kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+```
+### Создание  storage:
 
-
-Создание стораджей:
-
-# This assumes that your Node uses "sudo" to run commands
-# as the superuser
-
-
+```sh
 sudo mkdir /mnt/pv_data
 kubectl apply -f pv-volume.yaml
-
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: db-volume
-  labels:
-    app.kubernetes.io/name: db_volume
-    app.kubernetes.io/instance: worker
-    app.kubernetes.io/version: v1
-    app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: django-application-k8s-example
-    app.kubernetes.io/managed-by: kubectl
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 5Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/mnt/pv_data"
-    
-root@worker:~/kubernetes# kubectl get pv
+```
+Проверяем:
+```
+kubectl get pv
+```
+```console
 NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
 db-volume   5Gi        RWO            Retain           Available           manual                  50s
-
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: db-pv-claim
-  labels:
-    app.kubernetes.io/name: db-volume-claim
-    app.kubernetes.io/instance: worker
-    app.kubernetes.io/version: v1
-    app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: django-application-k8s-example
-    app.kubernetes.io/managed-by: kubectl
-spec:
-  storageClassName: manual
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-
+```
+```console
 NAME          STATUS   VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 db-pv-claim   Bound    db-volume   5Gi        RWO            manual         6s
 
 NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                 STORAGECLASS   REASON   AGE
 db-volume   5Gi        RWO            Retain           Bound    default/db-pv-claim   manual                  4m13s
-
+```
+```sh
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-
-# The postgres helm chart deployment will be using PVC postgresql-data-claim
-primary:
-  persistence:
-    enabled: true
-    existingClaim: "db-pv-claim"
-
+```
 
 helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' --set volumePermissions.enabled=true -f values.yaml bitnami/postgresql
 
