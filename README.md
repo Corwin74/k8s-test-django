@@ -216,3 +216,9 @@ kubectl -f apply kubernetes/django-migrate
 ```sh
 kubectl apply -f kubernetes/cron-job.yaml
 ```
+## Деплой в кластере kubernetes
+
+
+```sh
+kubectl set image deployments django-unit django=corwinz/dj:a075d38
+```
