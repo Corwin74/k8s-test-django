@@ -166,6 +166,10 @@ kubectl get pv
 NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
 db-volume   5Gi        RWO            Retain           Available           manual                  50s
 ```
+```sh
+kubectl apply -f pv-claim.yaml
+kubectl get pv,pvc
+```
 ```console
 NAME          STATUS   VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 db-pv-claim   Bound    db-volume   5Gi        RWO            manual         6s
@@ -173,11 +177,10 @@ db-pv-claim   Bound    db-volume   5Gi        RWO            manual         6s
 NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                 STORAGECLASS   REASON   AGE
 db-volume   5Gi        RWO            Retain           Bound    default/db-pv-claim   manual                  4m13s
 ```
+#### Устанавливаем PostgreSQL
 ```sh
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
+helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' --set volumePermissions.enabled=true -f values-db.yaml bitnami/postgresql
 ```
-
-helm install db --set commonLabels='app.kubernetes.io/part-of: django-application-k8s-example' --set volumePermissions.enabled=true -f values.yaml bitnami/postgresql
-
-
+Дальнейшая настройка аналогична настройке в `minikube`
