@@ -22,7 +22,6 @@ sysctl -f /etc/sysctl.d/10-k8s.conf
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
 
-
 lsmod | grep br_netfilter
 lsmod | grep overlay
 
