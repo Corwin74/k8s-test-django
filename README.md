@@ -219,6 +219,8 @@ kubectl apply -f django-unit/cron-job.yaml
 ```
 ## Деплой в кластере kubernetes
 
+Установка и настройка кластера на VPS в файлах: `cluster\k8s.md` и `contour.md`
+
 Для работы приложения необходим `secret django-secret-v1`, содержащий url подключения в котором приложению передаются учетные данные для подключения к базе данных, и SECRET_KEY для Django.
 ```
 kubectl create secret generic django-secret-v1 --from-literal='SECRET_KEY=67wi5rqyv(aynrrwcxlq25@_(83*6)9s##(rz4hi=+0b&1%-e&' --from-literal='DATABASE_URL=postgres://starburger_db_user:password@db-postgresql:5432/star_burger'
