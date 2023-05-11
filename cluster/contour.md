@@ -30,9 +30,16 @@ letsencrypt-staging   True    79s
 kubectl apply -f cluster\ingress.yaml
 ```
 
-kubectl edit ingress django-ingress
+После того, как сертификат будет получен от `staging` сервера, заменяем его на `prod`.  Создаем новый `clusterissuer`
+```sh
+kubectl apply -f letsencrypt-prod.yaml
+```
+И редактируем `ingress` заменив  
+.metadata.annotations.cert-manager.io/cluster-issuer: ~~letsencrypt-staging~~ letsencrypt-prod  
 
+У меня возникла проблема при выпуске сертификата, при проверке права владения доменным именем не работал `solver` пока в него не добавить:
+```
 spec:
   ingressClassName: nginx
-
+```
 
